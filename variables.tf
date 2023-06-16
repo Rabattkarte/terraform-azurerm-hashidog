@@ -1,15 +1,18 @@
 # Copyright (c) HashiCorp, Inc.
 # SPDX-License-Identifier: Apache-2.0
 
-##############################################################################
-# Variables File
-# 
-# Here is where we store the default values for all the variables used in our
-# Terraform code. If you create a variable with no default, the user will be
-# prompted to enter it (or define it via config file or command line flags.)
-
 variable "prefix" {
   description = "This prefix will be included in the name of most resources."
+}
+
+variable "custom_text" {
+  description = "The text that will be displayed on the website."
+  default = "Replace this text with your own."
+}
+
+variable "environment" {
+  description = "The environment of this deployment."
+  default     = "Production"
 }
 
 variable "location" {
@@ -69,7 +72,7 @@ variable "height" {
 
 variable "width" {
   default     = "600"
-  description = "Image width in pixels."
+  description = "Image width in pixels. Should be below 800."
 }
 
 variable "placeholder" {
