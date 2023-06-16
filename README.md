@@ -1,5 +1,5 @@
-# hashicat
+# hashiwoof
 
-Hashicat: A terraform built application for use in Hashicorp workshops.
+A No Code Module to deploy a VM with a demo app.
 
-Includes the "Meow World" website. 😻
+Includes the "Woof World" website. 🐶

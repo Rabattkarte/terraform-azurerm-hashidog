@@ -18,8 +18,14 @@ provider "azurerm" {
   }
 }
 
+resource "random_pet" "random" {}
+
+locals {
+  prefix = "${var.prefix}-${random_pet.random.id}"
+}
+
 resource "azurerm_resource_group" "myresourcegroup" {
-  name     = "${var.prefix}-workshop"
+  name     = "${local.prefix}-workshop"
   location = var.location
 
   tags = {
@@ -28,21 +34,21 @@ resource "azurerm_resource_group" "myresourcegroup" {
 }
 
 resource "azurerm_virtual_network" "vnet" {
-  name                = "${var.prefix}-vnet"
+  name                = "${local.prefix}-vnet"
   location            = azurerm_resource_group.myresourcegroup.location
   address_space       = [var.address_space]
   resource_group_name = azurerm_resource_group.myresourcegroup.name
 }
 
 resource "azurerm_subnet" "subnet" {
-  name                 = "${var.prefix}-subnet"
+  name                 = "${local.prefix}-subnet"
   virtual_network_name = azurerm_virtual_network.vnet.name
   resource_group_name  = azurerm_resource_group.myresourcegroup.name
   address_prefixes     = [var.subnet_prefix]
 }
 
-resource "azurerm_network_security_group" "catapp-sg" {
-  name                = "${var.prefix}-sg"
+resource "azurerm_network_security_group" "dogapp_sg" {
+  name                = "${local.prefix}-sg"
   location            = var.location
   resource_group_name = azurerm_resource_group.myresourcegroup.name
 
@@ -83,46 +89,46 @@ resource "azurerm_network_security_group" "catapp-sg" {
   }
 }
 
-resource "azurerm_network_interface" "catapp-nic" {
-  name                = "${var.prefix}-catapp-nic"
+resource "azurerm_network_interface" "dogapp_nic" {
+  name                = "${local.prefix}-dogapp_nic"
   location            = azurerm_resource_group.myresourcegroup.location
   resource_group_name = azurerm_resource_group.myresourcegroup.name
 
   ip_configuration {
-    name                          = "${var.prefix}ipconfig"
+    name                          = "${local.prefix}ipconfig"
     subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.catapp-pip.id
+    public_ip_address_id          = azurerm_public_ip.dogapp_pip.id
   }
 }
 
-resource "azurerm_network_interface_security_group_association" "catapp-nic-sg-ass" {
-  network_interface_id      = azurerm_network_interface.catapp-nic.id
-  network_security_group_id = azurerm_network_security_group.catapp-sg.id
+resource "azurerm_network_interface_security_group_association" "dogapp_nic_sg_ass" {
+  network_interface_id      = azurerm_network_interface.dogapp_nic.id
+  network_security_group_id = azurerm_network_security_group.dogapp_sg.id
 }
 
-resource "azurerm_public_ip" "catapp-pip" {
-  name                = "${var.prefix}-ip"
+resource "azurerm_public_ip" "dogapp_pip" {
+  name                = "${local.prefix}-ip"
   location            = azurerm_resource_group.myresourcegroup.location
   resource_group_name = azurerm_resource_group.myresourcegroup.name
   allocation_method   = "Dynamic"
-  domain_name_label   = "${var.prefix}-meow"
+  domain_name_label   = "${local.prefix}-woof"
 }
 
-data "azurerm_public_ip" "example" {
-  name                = azurerm_public_ip.catapp-pip.name
+data "azurerm_public_ip" "dogapp_pip" {
+  name                = azurerm_public_ip.dogapp_pip.name
   resource_group_name = azurerm_resource_group.myresourcegroup.name
 }
 
-resource "azurerm_linux_virtual_machine" "catapp" {
-  name                            = "${var.prefix}-meow"
+resource "azurerm_linux_virtual_machine" "dogapp" {
+  name                            = "${local.prefix}-woof"
   location                        = azurerm_resource_group.myresourcegroup.location
   resource_group_name             = azurerm_resource_group.myresourcegroup.name
   size                            = var.vm_size
   admin_username                  = var.admin_username
   admin_password                  = var.admin_password
   disable_password_authentication = false
-  network_interface_ids           = [azurerm_network_interface.catapp-nic.id]
+  network_interface_ids           = [azurerm_network_interface.dogapp_nic.id]
 
   source_image_reference {
     publisher = var.image_publisher
@@ -141,7 +147,7 @@ resource "azurerm_linux_virtual_machine" "catapp" {
   tags = {}
 
   # Added to allow destroy to work correctly.
-  depends_on = [azurerm_network_interface_security_group_association.catapp-nic-sg-ass]
+  depends_on = [azurerm_network_interface_security_group_association.dogapp_nic_sg_ass]
 }
 
 # We're using a little trick here so we can run the provisioner without
@@ -156,9 +162,9 @@ resource "azurerm_linux_virtual_machine" "catapp" {
 # Set up some environment variables for our script.
 # Add execute permissions to our scripts.
 # Run the deploy_app.sh script.
-resource "null_resource" "configure-cat-app" {
+resource "null_resource" "configure_dog_app" {
   depends_on = [
-    azurerm_linux_virtual_machine.catapp,
+    azurerm_linux_virtual_machine.dogapp,
   ]
 
   # Terraform 0.11
@@ -173,35 +179,30 @@ resource "null_resource" "configure-cat-app" {
 
   provisioner "file" {
     source      = "files/"
-    destination = "/home/${var.admin_username}/"
+    destination = "/var/www/html/"
 
     connection {
       type     = "ssh"
       user     = var.admin_username
       password = var.admin_password
-      host     = azurerm_public_ip.catapp-pip.fqdn
+      host     = azurerm_public_ip.dogapp_pip.fqdn
     }
   }
 
   provisioner "remote-exec" {
     inline = [
       "sudo apt -y update",
-      "sleep 15",
-      "sudo apt -y update",
-      "sudo apt -y install apache2",
+      "sudo apt -y install apache2 cowsay",
       "sudo systemctl start apache2",
       "sudo chown -R ${var.admin_username}:${var.admin_username} /var/www/html",
-      "chmod +x *.sh",
-      "PLACEHOLDER=${var.placeholder} WIDTH=${var.width} HEIGHT=${var.height} PREFIX=${var.prefix} CUSTOM_TEXT=${var.custom_text} ./deploy_app.sh",
-      "sudo apt -y install cowsay",
-      "cowsay Mooooooooooo!",
+      "cowsay remote-exec finished"
     ]
 
     connection {
       type     = "ssh"
       user     = var.admin_username
       password = var.admin_password
-      host     = azurerm_public_ip.catapp-pip.fqdn
+      host     = azurerm_public_ip.dogapp_pip.fqdn
     }
   }
 }
