@@ -7,6 +7,11 @@ terraform {
       source  = "hashicorp/azurerm"
       version = ">=3.41.0"
     }
+
+    random = {
+      source  = "hashicorp/random"
+      version = ">=3.5.1"
+    }
   }
 }
 
@@ -18,7 +23,9 @@ provider "azurerm" {
   }
 }
 
-resource "random_pet" "random" {}
+resource "random_pet" "random" {
+  length = 1
+}
 
 locals {
   prefix = "${var.prefix}-${random_pet.random.id}"
