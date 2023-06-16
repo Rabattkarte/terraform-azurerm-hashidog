@@ -12,7 +12,7 @@ variable "environment" {
 
 variable "location" {
   description = "The region where the virtual network is created."
-  default     = "centralus"
+  default     = "westeurope"
 }
 
 variable "address_space" {
