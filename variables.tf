@@ -7,7 +7,6 @@ variable "prefix" {
 
 variable "custom_text" {
   description = "The text that will be displayed on the website."
-  default = "Replace this text with your own."
 }
 
 variable "environment" {
