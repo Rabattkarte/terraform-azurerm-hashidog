@@ -214,3 +214,14 @@ resource "null_resource" "configure_dog_app" {
     }
   }
 }
+
+check "health_check" {
+  data "http" "dogapp" {
+    url = "http://${azurerm_public_ip.dogapp_pip.fqdn}"
+  }
+
+  assert {
+    condition     = data.http.dogapp.status_code == 200
+    error_message = "${data.http.dogapp.url} returned an unhealthy status code"
+  }
+}
