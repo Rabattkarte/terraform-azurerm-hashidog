@@ -186,7 +186,7 @@ resource "null_resource" "configure_dog_app" {
 
   provisioner "file" {
     source      = "files/"
-    destination = "/var/www/html/"
+    destination = "/home/${var.admin_username}/"
 
     connection {
       type     = "ssh"
@@ -202,6 +202,7 @@ resource "null_resource" "configure_dog_app" {
       "sudo apt -y install apache2 cowsay",
       "sudo systemctl start apache2",
       "sudo chown -R ${var.admin_username}:${var.admin_username} /var/www/html",
+      "cp /home/${var.admin_username}/index.html /var/www/html/index.html",
       "cowsay remote-exec finished"
     ]
 
